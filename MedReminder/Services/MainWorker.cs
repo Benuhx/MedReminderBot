@@ -3,29 +3,26 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Telegram.Bot.Args;
 
-namespace MedReminder.Services
-{
-    public interface IMainWorker
-    {
+namespace MedReminder.Services {
+    public interface IMainWorker {
         Task Run();
     }
-    public class MainWorker : IMainWorker
-    {
-        private IYamlConfigService _yamlConfigService;
+
+    public class MainWorker : IMainWorker {
+        private readonly IYamlConfigService _yamlConfigService;
         private readonly ILogger<MainWorker> _logger;
         private readonly ITelegramApi _telegramApi;
 
-        public MainWorker(IYamlConfigService yamlConfigService, ILogger<MainWorker> _logger, ITelegramApi telegramApi)
-        {
+        public MainWorker(IYamlConfigService yamlConfigService, ILogger<MainWorker> _logger, ITelegramApi telegramApi) {
             _yamlConfigService = yamlConfigService;
             this._logger = _logger;
             _telegramApi = telegramApi;
         }
-        public async Task Run()
-        {
-            if (!_yamlConfigService.ConfigFileExists())
-            {
+
+        public async Task Run() {
+            if (!_yamlConfigService.ConfigFileExists()) {
                 _yamlConfigService.WriteDefaultConfig();
                 _logger.LogWarning($"Config file not found, created default. Please modify file and restart app");
                 return;
@@ -33,10 +30,14 @@ namespace MedReminder.Services
 
             var config = await _yamlConfigService.ReadConfig();
             _telegramApi.SetTelegramBotToken(config.TelegramToken);
-
+            _telegramApi.NeueNachricht += TelegramApiOnNeueNachricht;
             while (true) {
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromSeconds(30));
             }
+        }
+
+        private async void TelegramApiOnNeueNachricht(object? sender, MessageEventArgs e) {
+            await _telegramApi.SendeNachricht("Was geht?", e.Message.Chat.Id, true);
         }
     }
 }

@@ -8,34 +8,28 @@ using MedReminder.DTO;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 
-namespace MedReminder.Services
-{
-    public interface IYamlConfigService
-    {
+namespace MedReminder.Services {
+    public interface IYamlConfigService {
         bool ConfigFileExists();
         void WriteDefaultConfig();
         Task<Config> ReadConfig();
     }
 
-    public class YamlConfigService : IYamlConfigService
-    {
+    public class YamlConfigService : IYamlConfigService {
         private readonly string _configFilePath;
         private readonly ILogger<YamlConfigService> _logger;
 
-        public YamlConfigService(ILogger<YamlConfigService> logger)
-        {
+        public YamlConfigService(ILogger<YamlConfigService> logger) {
             _logger = logger;
             var currentDir = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             _configFilePath = Path.Combine(currentDir, "config.yaml");
         }
 
-        public bool ConfigFileExists()
-        {
+        public bool ConfigFileExists() {
             return File.Exists(_configFilePath);
         }
 
-        public async Task<Config> ReadConfig()
-        {
+        public async Task<Config> ReadConfig() {
             var deserializer = new Deserializer();
 
             if (!ConfigFileExists())
@@ -47,10 +41,8 @@ namespace MedReminder.Services
         }
 
 
-        public void WriteDefaultConfig()
-        {
-            var emptyConfig = new Config
-            {
+        public void WriteDefaultConfig() {
+            var emptyConfig = new Config {
                 TelegramToken = string.Empty
             };
 
@@ -61,6 +53,6 @@ namespace MedReminder.Services
 
             if (File.Exists(_configFilePath)) File.Delete(_configFilePath);
             File.WriteAllText(_configFilePath, yaml);
-        }       
+        }
     }
 }

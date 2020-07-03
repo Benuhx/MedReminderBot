@@ -6,12 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using StructureMap;
 
-namespace MedReminder
-{
-    public class Program
-    {
-        public static async Task Main(string[] args)
-        {
+namespace MedReminder {
+    public class Program {
+        public static async Task Main(string[] args) {
             using (var container = ConfigureDependencyInjectionAndCreateContainer()) {
                 var mainWorker = container.GetInstance<IMainWorker>();
                 await mainWorker.Run();
