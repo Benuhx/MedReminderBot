@@ -13,7 +13,7 @@ namespace MedReminder.Services
     public interface IYamlConfigService
     {
         bool ConfigFileExists();
-        void WriteConfig();
+        void WriteDefaultConfig();
         Task<Config> ReadConfig();
     }
 
@@ -47,7 +47,7 @@ namespace MedReminder.Services
         }
 
 
-        public void WriteConfig()
+        public void WriteDefaultConfig()
         {
             var emptyConfig = new Config
             {
