@@ -42,7 +42,8 @@ namespace MedReminder.Services {
 
 
         public void WriteDefaultConfig() {
-            var emptyConfig = new Config {
+            var emptyConfig = new Config
+            {
                 TelegramToken = string.Empty
             };
 

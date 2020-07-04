@@ -4,41 +4,32 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using MedReminder.Entities;
 using MedReminder.DTO;
 
-namespace MedReminder.Repository
-{
-    public partial class MedReminderDbContext : DbContext
-    {
+namespace MedReminder.Repository {
+    public partial class MedReminderDbContext : DbContext {
         private readonly Config _config;
 
-        public MedReminderDbContext()
-        {
+        public MedReminderDbContext() {
         }
 
-        public MedReminderDbContext(Config config)
-        {
+        public MedReminderDbContext(Config config) {
             _config = config;
         }
 
         public MedReminderDbContext(DbContextOptions<MedReminderDbContext> options)
-            : base(options)
-        {
+            : base(options) {
         }
 
         public virtual DbSet<Benutzer> Benutzer { get; set; }
         public virtual DbSet<ChatZustand> ChatZustand { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
+            if (!optionsBuilder.IsConfigured) {
                 optionsBuilder.UseNpgsql(_config.PostgresConnectionString);
             }
         }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<Benutzer>(entity =>
-            {
+        protected override void OnModelCreating(ModelBuilder modelBuilder) {
+            modelBuilder.Entity<Benutzer>(entity => {
                 entity.HasIndex(e => e.TelegramChatId)
                     .HasName("user_telegram_chat_id_uindex")
                     .IsUnique();
@@ -46,8 +37,7 @@ namespace MedReminder.Repository
                 entity.Property(e => e.Id).HasDefaultValueSql("nextval('user_id_seq'::regclass)");
             });
 
-            modelBuilder.Entity<ChatZustand>(entity =>
-            {
+            modelBuilder.Entity<ChatZustand>(entity => {
                 entity.HasIndex(e => e.TelegramChatId)
                     .HasName("chat_zustand_telegram_chat_id_uindex")
                     .IsUnique();

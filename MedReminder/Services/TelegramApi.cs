@@ -6,14 +6,14 @@ using Telegram.Bot.Args;
 
 namespace MedReminder.Services {
     public interface ITelegramApi {
-        Action<MessageEventArgs> NeueNachricht {get; set;}
+        Action<MessageEventArgs> NeueNachricht { get; set; }
         void SetTelegramBotToken(string telegramBotToken);
         Task SendeNachricht(string txt, long chatId, bool enableNotification);
     }
 
     public class TelegramApi : ITelegramApi {
         private TelegramBotClient _botClient;
-        public Action<MessageEventArgs> NeueNachricht {get; set;}
+        public Action<MessageEventArgs> NeueNachricht { get; set; }
 
         public TelegramApi() {
 

@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace MedReminder.Entities
-{
+namespace MedReminder.Entities {
     [Table("chat_zustand")]
-    public partial class ChatZustand
-    {
+    public partial class ChatZustand {
         [Key]
         [Column("id")]
         public int Id { get; set; }
