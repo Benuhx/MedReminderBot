@@ -1,42 +1,39 @@
 ﻿using System;
 using System.Threading.Tasks;
+using MedReminder.DTO;
+using MedReminder.Entities;
+using MedReminder.Repository;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot.Args;
 
 namespace MedReminder.Services
 {
-    public interface IMainWorker {
+    public interface IMainWorker
+    {
         Task Run();
     }
 
-    public class MainWorker : IMainWorker {
-        private readonly IYamlConfigService _yamlConfigService;
+    public class MainWorker : IMainWorker
+    {
         private readonly ILogger<MainWorker> _logger;
-        private readonly ITelegramApi _telegramApi;
+        private readonly IDbRepository _dbRepository;
+        private readonly IBotUserInteractionService _botUserInteractionService;
+        private readonly Config _config;
 
-        public MainWorker(IYamlConfigService yamlConfigService, ILogger<MainWorker> _logger, ITelegramApi telegramApi) {
-            _yamlConfigService = yamlConfigService;
-            this._logger = _logger;
-            _telegramApi = telegramApi;
+        public MainWorker(Config config, ILogger<MainWorker> logger, IDbRepository dbRepository, IBotUserInteractionService botUserInteractionService)
+        {
+            _botUserInteractionService = botUserInteractionService;
+            _config = config;
+            _logger = logger;
+            _dbRepository = dbRepository;
         }
 
-        public async Task Run() {
-            if (!_yamlConfigService.ConfigFileExists()) {
-                _yamlConfigService.WriteDefaultConfig();
-                _logger.LogWarning("Config file not found, created default. Please modify file and restart app");
-                return;
-            }
-
-            var config = await _yamlConfigService.ReadConfig();
-            _telegramApi.SetTelegramBotToken(config.TelegramToken);
-            _telegramApi.NeueNachricht = NeueNachrichtEmpfangen;
-            while (true) {
+        public async Task Run()
+        {
+            while (true)
+            {
                 await Task.Delay(TimeSpan.FromSeconds(30));
             }
-        }
-
-        private async void NeueNachrichtEmpfangen(MessageEventArgs e) {
-            await _telegramApi.SendeNachricht("Was geht?", e.Message.Chat.Id, true);
         }
     }
 }
