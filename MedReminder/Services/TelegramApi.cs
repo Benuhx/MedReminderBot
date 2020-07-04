@@ -8,7 +8,7 @@ namespace MedReminder.Services {
     public interface ITelegramApi {
         Action<MessageEventArgs> NeueNachricht { get; set; }
         void SetTelegramBotToken(string telegramBotToken);
-        Task SendeNachricht(string txt, long chatId, bool enableNotification);
+        Task SendeNachricht(string txt, long chatId, bool enableNotification = true);
     }
 
     public class TelegramApi : ITelegramApi {
@@ -25,7 +25,7 @@ namespace MedReminder.Services {
             _botClient.StartReceiving();
         }
 
-        public async Task SendeNachricht(string txt, long chatId, bool enableNotification) {
+        public async Task SendeNachricht(string txt, long chatId, bool enableNotification = true) {
             if (_botClient == null) throw new Exception("Telegram Bot not initialized");
             await _botClient.SendTextMessageAsync(chatId, txt, disableNotification: !enableNotification);
         }
