@@ -1,0 +1,30 @@
+# Aktuell für die Datenbank und deren Verwaltung
+version: "3.7"
+services:
+  database:
+    image: postgres:12
+    volumes:
+      - postgres-data-med:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: "36VCIo2buRjSYJFIzDhc0W7Xkv0HLY84"
+      POSTGRES_USER: "med_reminder_app"
+      POSTGRES_DB: med_reminder
+    ports:
+      - 5432:5432
+  pgadmin:
+    image: dpage/pgadmin4
+    volumes:
+    - pgadmin-storage:/var/lib/pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "jannismh@outlook.com"
+      PGADMIN_DEFAULT_PASSWORD: "TTPxJDoEkNq08tatJOMKQNNTwza1WW"
+      PGADMIN_LISTEN_PORT: 1228
+    ports:
+    - 1228:1228
+    depends_on:
+        - database
+volumes:
+    postgres-data-med:
+        external: true
+    pgadmin-storage:
+        external: true

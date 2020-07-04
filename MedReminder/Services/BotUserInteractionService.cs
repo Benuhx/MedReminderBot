@@ -1,13 +1,15 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MedReminder.DTO;
 using MedReminder.Entities;
 using MedReminder.Repository;
+using Microsoft.Extensions.Logging;
 using Telegram.Bot.Args;
 
 namespace MedReminder.Services {
     public interface IBotUserInteractionService {
-        void VerarbeiteNeueNachricht(MessageEventArgs e);
+
     }
 
     public class BotUserInteractionService : IBotUserInteractionService {
@@ -15,30 +17,43 @@ namespace MedReminder.Services {
         private readonly DbRepository _dbRepository;
         private readonly Config _config;
         private readonly Dictionary<long, ChatZustand> _chatZustand;
+        private readonly ILogger<BotUserInteractionService> _logger;
 
-        public BotUserInteractionService(ITelegramApi telegramApi, DbRepository dbRepository, Config config) {
+        public BotUserInteractionService(ITelegramApi telegramApi, DbRepository dbRepository, Config config, ILogger<BotUserInteractionService> logger) {
             _telegramApi = telegramApi;
             _telegramApi.NeueNachricht = VerarbeiteNeueNachricht;
             _dbRepository = dbRepository;
             _config = config;
             _telegramApi.SetTelegramBotToken(config.TelegramToken);
             _chatZustand = new Dictionary<long, ChatZustand>();
+            _logger = logger;
         }
 
-        public async void VerarbeiteNeueNachricht(MessageEventArgs e) {
+        private async void VerarbeiteNeueNachrichtWrapper(MessageEventArgs e) {
+            try {
+                VerarbeiteNeueNachricht(e);
+            } catch (Exception ex) {
+                _logger.LogError(ex.ToString());
+            }
+        }
+
+        private async void VerarbeiteNeueNachricht(MessageEventArgs e) {
             var chatId = e.Message.Chat.Id;
             var nachrichtText = e.Message.Text;
-            if (!_chatZustand.ContainsKey(chatId)) {
-                _chatZustand.Add(chatId, ChatZustand.NichtBekannt);
-            }
-            var zustand = _chatZustand[chatId];
 
-            switch (zustand) {
+            if (nachrichtText.Contains("/start")) return;
+
+            var chatZustand = GetChatZustand(chatId);
+
+            switch (chatZustand) {
                 case ChatZustand.NichtBekannt:
                     await NeuenBenutzerRegistrieren(chatId);
                     break;
                 case ChatZustand.WarteAufName:
                     await SpeichereBenutzer(chatId, nachrichtText);
+                    break;
+                default:
+                    await _telegramApi.SendeNachricht("Ich habe leider keine passende Antwort für dich ☹", chatId, true);
                     break;
             }
         }
@@ -60,8 +75,16 @@ namespace MedReminder.Services {
             _chatZustand[chatId] = ChatZustand.WarteAufUhrzeit;
         }
 
-        private bool BenutzerIstBekannt(long chatId) {
-            return _dbRepository.ChatIdExistiert(chatId);
+        private ChatZustand GetChatZustand(long chatId) {
+            if (!_chatZustand.ContainsKey(chatId)) {
+                _chatZustand.Add(chatId, ChatZustand.NichtBekannt);
+            }
+
+            return _chatZustand[chatId];
+        }
+
+        private void SetzteChatZustand(long chatId, ChatZustand chatZustand) {
+            _chatZustand[chatId] = chatZustand;
         }
     }
 
