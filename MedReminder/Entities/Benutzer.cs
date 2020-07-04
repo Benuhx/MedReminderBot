@@ -8,6 +8,11 @@ namespace MedReminder.Entities
     [Table("benutzer")]
     public partial class Benutzer
     {
+        public Benutzer()
+        {
+            Erinnerung = new HashSet<Erinnerung>();
+        }
+
         [Key]
         [Column("id")]
         public int Id { get; set; }
@@ -19,5 +24,7 @@ namespace MedReminder.Entities
 
         [InverseProperty("Benutzer")]
         public virtual ChatZustand ChatZustand { get; set; }
+        [InverseProperty("Benutzer")]
+        public virtual ICollection<Erinnerung> Erinnerung { get; set; }
     }
 }
