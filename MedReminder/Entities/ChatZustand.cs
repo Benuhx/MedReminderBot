@@ -16,6 +16,6 @@ namespace MedReminder.Entities
         [Column("zustand")]
         public int Zustand { get; set; }
 
-        public virtual Benutzer Chat { get; set; }
+        public virtual Benutzer Benutzer { get; set; }
     }
 }

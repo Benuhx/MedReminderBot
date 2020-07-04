@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
 using MedReminder.DTO;
@@ -9,13 +10,15 @@ using Telegram.Bot.Args;
 
 namespace MedReminder.Services {
     public interface IBotUserInteractionService {
-
+        Task SendeErinnerung(Erinnerung e);
     }
 
     public class BotUserInteractionService : IBotUserInteractionService {
         private readonly ITelegramApi _telegramApi;
         private readonly DbRepository _dbRepository;
         private readonly ILogger<BotUserInteractionService> _logger;
+        private readonly List<string> _smilies;
+        private readonly Random _random;
 
         public BotUserInteractionService(ITelegramApi telegramApi, DbRepository dbRepository, Config config, ILogger<BotUserInteractionService> logger) {
             _telegramApi = telegramApi;
@@ -23,6 +26,8 @@ namespace MedReminder.Services {
             _dbRepository = dbRepository;
             _telegramApi.SetTelegramBotToken(config.TelegramToken);
             _logger = logger;
+            _smilies = new List<string> { ":)", "😀", "😛", "😉" };
+            _random = new Random();
         }
 
         private async void VerarbeiteNeueNachrichtWrapper(MessageEventArgs e) {
@@ -78,12 +83,12 @@ namespace MedReminder.Services {
         private async Task SpeichereUhrzeit(Benutzer benutzer, long chatId, string nachrichtText) {
             nachrichtText = nachrichtText.Replace(":", "");
 
-            if(nachrichtText.Length == 2 && int.TryParse(nachrichtText, out int number) && number >= 0 && number <=24 ) {
+            if (nachrichtText.Length == 2 && int.TryParse(nachrichtText, out int number) && number >= 0 && number <= 24) {
                 nachrichtText = $"{nachrichtText}00";
             }
 
             var parseErfolgreich = DateTime.TryParseExact(nachrichtText, "HHmm", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTime uhrzeitErinnerung);
-            if(!parseErfolgreich) {
+            if (!parseErfolgreich) {
                 await _telegramApi.SendeNachricht($"Deine Eingabe ist keine valide Uhrzeit 🤨. Probiere es mit z.B. mit 21:00 für 21 Uhr", chatId);
                 return;
             }
@@ -94,7 +99,8 @@ namespace MedReminder.Services {
             var e = new Erinnerung
             {
                 BenutzerId = benutzer.Id,
-                UhrzeitUtc = uhrzeitErinnerung.ToUniversalTime()
+                UhrzeitUtc = uhrzeitErinnerung.ToUniversalTime(),
+                GueltigAbDatim = DateTime.UtcNow.Date
             };
             _dbRepository.SpeichereErinerung(e);
 
@@ -102,9 +108,22 @@ namespace MedReminder.Services {
             await _telegramApi.SendeNachricht($"Ich erinnere dich um {uhrzeitErinnerung:HH:mm} Uhr 💪", chatId);
         }
 
+        public async Task SendeErinnerung(Erinnerung e) {
+            var smiley = GetRandomSmiley();
+            var chatId = _dbRepository.GetChatIdFromBenutzer(e.Benutzer);
+
+            await _telegramApi.SendeNachricht($"Hey {e.Benutzer.Name} 😎{Environment.NewLine}Denke an deine Tablette {smiley}", chatId);
+            var eg = new ErinnerungGesendet
+            {
+                ErinnerungId = e.Id,
+                GesendetUm = DateTime.UtcNow
+            };
+            _dbRepository.SpeichereErinnerungGesendet(eg);
+        }
+
         private ZustandChat GetChatZustand(long chatId) {
             var zustand = _dbRepository.GetChatZustand(chatId);
-            if(zustand == null) return ZustandChat.NichtBekannt;
+            if (zustand == null) return ZustandChat.NichtBekannt;
             return (ZustandChat)zustand.Zustand;
         }
 
@@ -115,6 +134,11 @@ namespace MedReminder.Services {
                 Zustand = (int)chatZustand
             };
             _dbRepository.SpeichereChatZustand(zustand);
+        }
+
+        private string GetRandomSmiley() {
+            var r = _random.Next(0, _smilies.Count);
+            return _smilies[r];
         }
     }
 }

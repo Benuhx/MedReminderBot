@@ -8,6 +8,11 @@ namespace MedReminder.Entities
     [Table("erinnerung")]
     public partial class Erinnerung
     {
+        public Erinnerung()
+        {
+            ErinnerungGesendet = new HashSet<ErinnerungGesendet>();
+        }
+
         [Key]
         [Column("id")]
         public int Id { get; set; }
@@ -15,9 +20,13 @@ namespace MedReminder.Entities
         public int BenutzerId { get; set; }
         [Column("uhrzeit_utc")]
         public DateTime UhrzeitUtc { get; set; }
+        [Column("gueltig_ab_datim")]
+        public DateTime GueltigAbDatim { get; set; }
 
         [ForeignKey(nameof(BenutzerId))]
         [InverseProperty("Erinnerung")]
         public virtual Benutzer Benutzer { get; set; }
+        [InverseProperty("Erinnerung")]
+        public virtual ICollection<ErinnerungGesendet> ErinnerungGesendet { get; set; }
     }
 }

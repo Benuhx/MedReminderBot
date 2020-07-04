@@ -22,7 +22,7 @@ namespace MedReminder.Entities
         [Column("telegram_chat_id")]
         public long TelegramChatId { get; set; }
 
-        public virtual ChatZustand ChatZustand { get; set; }
+        public virtual ChatZustand TelegramChat { get; set; }
         [InverseProperty("Benutzer")]
         public virtual ICollection<Erinnerung> Erinnerung { get; set; }
     }

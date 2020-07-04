@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using MedReminder.DTO;
 using MedReminder.Entities;
@@ -14,16 +15,23 @@ namespace MedReminder.Services {
     public class MainWorker : IMainWorker {
         private readonly ILogger<MainWorker> _logger;
         private readonly IBotUserInteractionService _botUserInteractionService;
+        private readonly DbRepository _dbRepository;
 
-        public MainWorker(ILogger<MainWorker> logger, IBotUserInteractionService botUserInteractionService) {
+        public MainWorker(ILogger<MainWorker> logger, IBotUserInteractionService botUserInteractionService, DbRepository dbRepository) {
             _botUserInteractionService = botUserInteractionService;
             _logger = logger;
+            _dbRepository = dbRepository;
         }
 
         public async Task Run() {
             _logger.LogInformation($"Ist gestart um {DateTime.Now}");
             while (true) {
-                await Task.Delay(TimeSpan.FromSeconds(30));
+                var faelligeErinnerungen = _dbRepository.GetFaelligeErinnerungen();
+
+                var tasks = faelligeErinnerungen.Select(x => _botUserInteractionService.SendeErinnerung(x)).ToArray();
+                Task.WaitAll(tasks);
+
+                await Task.Delay(TimeSpan.FromSeconds(5));
                 _logger.LogInformation($"Läuft um {DateTime.Now}");
             }
         }

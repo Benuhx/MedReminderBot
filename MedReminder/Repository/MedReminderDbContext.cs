@@ -22,9 +22,11 @@ namespace MedReminder.Repository {
         public virtual DbSet<Benutzer> Benutzer { get; set; }
         public virtual DbSet<ChatZustand> ChatZustand { get; set; }
         public virtual DbSet<Erinnerung> Erinnerung { get; set; }
+        public virtual DbSet<ErinnerungGesendet> ErinnerungGesendet { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
             if (!optionsBuilder.IsConfigured) {
+
                 optionsBuilder.UseNpgsql(_config.PostgresConnectionString);
             }
         }
@@ -34,19 +36,19 @@ namespace MedReminder.Repository {
                 entity.HasIndex(e => e.TelegramChatId)
                     .HasName("user_telegram_chat_id_uindex")
                     .IsUnique();
+
+                entity.HasOne(d => d.TelegramChat)
+                    .WithOne(p => p.Benutzer)
+                    .HasPrincipalKey<ChatZustand>(p => p.ChatId)
+                    .HasForeignKey<Benutzer>(d => d.TelegramChatId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("benutzer_chat_zustand_chat_id_fk");
             });
 
             modelBuilder.Entity<ChatZustand>(entity => {
                 entity.HasIndex(e => e.ChatId)
                     .HasName("chat_zustand_telegram_chat_id_uindex")
                     .IsUnique();
-
-                entity.HasOne(d => d.Chat)
-                    .WithOne(p => p.ChatZustand)
-                    .HasPrincipalKey<Benutzer>(p => p.TelegramChatId)
-                    .HasForeignKey<ChatZustand>(d => d.ChatId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("chat_zustand_benutzer_telegram_chat_id_fk");
             });
 
             modelBuilder.Entity<Erinnerung>(entity => {
@@ -55,6 +57,16 @@ namespace MedReminder.Repository {
                     .HasForeignKey(d => d.BenutzerId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("erinnerung_benutzer_id_fk");
+            });
+
+            modelBuilder.Entity<ErinnerungGesendet>(entity => {
+                entity.Property(e => e.GesendetUm).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.HasOne(d => d.Erinnerung)
+                    .WithMany(p => p.ErinnerungGesendet)
+                    .HasForeignKey(d => d.ErinnerungId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("erinnerung_gesendet_erinnerung_id_fk");
             });
 
             OnModelCreatingPartial(modelBuilder);
