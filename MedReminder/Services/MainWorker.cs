@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot.Args;
 
-namespace MedReminder.Services {
+namespace MedReminder.Services
+{
     public interface IMainWorker {
         Task Run();
     }
@@ -24,19 +23,19 @@ namespace MedReminder.Services {
         public async Task Run() {
             if (!_yamlConfigService.ConfigFileExists()) {
                 _yamlConfigService.WriteDefaultConfig();
-                _logger.LogWarning($"Config file not found, created default. Please modify file and restart app");
+                _logger.LogWarning("Config file not found, created default. Please modify file and restart app");
                 return;
             }
 
             var config = await _yamlConfigService.ReadConfig();
             _telegramApi.SetTelegramBotToken(config.TelegramToken);
-            _telegramApi.NeueNachricht += TelegramApiOnNeueNachricht;
+            _telegramApi.NeueNachricht = NeueNachrichtEmpfangen;
             while (true) {
                 await Task.Delay(TimeSpan.FromSeconds(30));
             }
         }
 
-        private async void TelegramApiOnNeueNachricht(object? sender, MessageEventArgs e) {
+        private async void NeueNachrichtEmpfangen(MessageEventArgs e) {
             await _telegramApi.SendeNachricht("Was geht?", e.Message.Chat.Id, true);
         }
     }

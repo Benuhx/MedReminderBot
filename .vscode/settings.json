@@ -1,0 +1,8 @@
+{
+    "files.autoSaveDelay": 800,
+    "files.exclude": {
+        "**/bin": true,
+        "**/obj": true
+    },
+    "files.autoSave": "afterDelay"
+}
