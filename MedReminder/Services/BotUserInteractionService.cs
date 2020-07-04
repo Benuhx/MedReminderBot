@@ -16,17 +16,13 @@ namespace MedReminder.Services {
     public class BotUserInteractionService : IBotUserInteractionService {
         private readonly ITelegramApi _telegramApi;
         private readonly DbRepository _dbRepository;
-        private readonly Config _config;
-        private readonly Dictionary<long, ChatZustand> _chatZustand;
         private readonly ILogger<BotUserInteractionService> _logger;
 
         public BotUserInteractionService(ITelegramApi telegramApi, DbRepository dbRepository, Config config, ILogger<BotUserInteractionService> logger) {
             _telegramApi = telegramApi;
             _telegramApi.NeueNachricht = VerarbeiteNeueNachrichtWrapper;
             _dbRepository = dbRepository;
-            _config = config;
             _telegramApi.SetTelegramBotToken(config.TelegramToken);
-            _chatZustand = new Dictionary<long, ChatZustand>();
             _logger = logger;
         }
 
@@ -95,7 +91,7 @@ namespace MedReminder.Services {
             };
             _dbRepository.SpeichereErinerung(e);
 
-            await _telegramApi.SendeNachricht($"Ich erinnere dich um {dateTime.ToString("HH:mm")} Uhr 💪", chatId, true);
+            await _telegramApi.SendeNachricht($"Ich erinnere dich um {dateTime:HH:mm} Uhr 💪", chatId, true);
             SpeichereChatZustand(chatId, ChatZustand.Fertig);
         }
 

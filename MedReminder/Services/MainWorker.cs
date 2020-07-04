@@ -13,20 +13,18 @@ namespace MedReminder.Services {
 
     public class MainWorker : IMainWorker {
         private readonly ILogger<MainWorker> _logger;
-        private readonly IDbRepository _dbRepository;
         private readonly IBotUserInteractionService _botUserInteractionService;
-        private readonly Config _config;
 
-        public MainWorker(Config config, ILogger<MainWorker> logger, IDbRepository dbRepository, IBotUserInteractionService botUserInteractionService) {
+        public MainWorker(ILogger<MainWorker> logger, IBotUserInteractionService botUserInteractionService) {
             _botUserInteractionService = botUserInteractionService;
-            _config = config;
             _logger = logger;
-            _dbRepository = dbRepository;
         }
 
         public async Task Run() {
+            _logger.LogInformation($"Ist gestart um {DateTime.Now}");
             while (true) {
                 await Task.Delay(TimeSpan.FromSeconds(30));
+                _logger.LogInformation($"Läuft um {DateTime.Now}");
             }
         }
     }

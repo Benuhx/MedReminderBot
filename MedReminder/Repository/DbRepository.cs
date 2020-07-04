@@ -4,12 +4,7 @@ using MedReminder.DTO;
 using MedReminder.Entities;
 
 namespace MedReminder.Repository {
-    public interface IDbRepository {
-        void AddBenutzer(Benutzer b);
-        bool ChatIdExistiert(long chatId);
-    }
-
-    public class DbRepository : IDbRepository {
+    public class DbRepository {
         private readonly Config _config;
 
         public DbRepository(Config config) {
