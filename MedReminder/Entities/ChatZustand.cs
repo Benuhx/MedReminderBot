@@ -3,17 +3,21 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace MedReminder.Entities {
+namespace MedReminder.Entities
+{
     [Table("chat_zustand")]
-    public partial class ChatZustand {
+    public partial class ChatZustand
+    {
         [Key]
         [Column("id")]
         public int Id { get; set; }
-        [Column("telegram_chat_id")]
-        public long TelegramChatId { get; set; }
+        [Column("benutzer_id")]
+        public int BenutzerId { get; set; }
         [Column("zustand")]
         public int Zustand { get; set; }
 
-        public virtual Benutzer TelegramChat { get; set; }
+        [ForeignKey(nameof(BenutzerId))]
+        [InverseProperty("ChatZustand")]
+        public virtual Benutzer Benutzer { get; set; }
     }
 }
