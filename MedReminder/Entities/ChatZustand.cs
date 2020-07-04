@@ -11,13 +11,11 @@ namespace MedReminder.Entities
         [Key]
         [Column("id")]
         public int Id { get; set; }
-        [Column("benutzer_id")]
-        public int BenutzerId { get; set; }
+        [Column("chat_id")]
+        public long ChatId { get; set; }
         [Column("zustand")]
         public int Zustand { get; set; }
 
-        [ForeignKey(nameof(BenutzerId))]
-        [InverseProperty("ChatZustand")]
-        public virtual Benutzer Benutzer { get; set; }
+        public virtual Benutzer Chat { get; set; }
     }
 }

@@ -7,10 +7,12 @@ using MedReminder.DTO;
 namespace MedReminder.Repository {
     public partial class MedReminderDbContext : DbContext {
         private readonly Config _config;
-        public MedReminderDbContext() {
-        }
+
         public MedReminderDbContext(Config config) {
             _config = config;
+        }
+
+        public MedReminderDbContext() {
         }
 
         public MedReminderDbContext(DbContextOptions<MedReminderDbContext> options)
@@ -35,15 +37,16 @@ namespace MedReminder.Repository {
             });
 
             modelBuilder.Entity<ChatZustand>(entity => {
-                entity.HasIndex(e => e.BenutzerId)
+                entity.HasIndex(e => e.ChatId)
                     .HasName("chat_zustand_telegram_chat_id_uindex")
                     .IsUnique();
 
-                entity.HasOne(d => d.Benutzer)
+                entity.HasOne(d => d.Chat)
                     .WithOne(p => p.ChatZustand)
-                    .HasForeignKey<ChatZustand>(d => d.BenutzerId)
+                    .HasPrincipalKey<Benutzer>(p => p.TelegramChatId)
+                    .HasForeignKey<ChatZustand>(d => d.ChatId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("chat_zustand_benutzer_id_fk");
+                    .HasConstraintName("chat_zustand_benutzer_telegram_chat_id_fk");
             });
 
             modelBuilder.Entity<Erinnerung>(entity => {

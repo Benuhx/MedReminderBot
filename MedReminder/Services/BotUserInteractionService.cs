@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 using MedReminder.DTO;
 using MedReminder.Entities;
@@ -21,7 +22,7 @@ namespace MedReminder.Services {
 
         public BotUserInteractionService(ITelegramApi telegramApi, DbRepository dbRepository, Config config, ILogger<BotUserInteractionService> logger) {
             _telegramApi = telegramApi;
-            _telegramApi.NeueNachricht = VerarbeiteNeueNachricht;
+            _telegramApi.NeueNachricht = VerarbeiteNeueNachrichtWrapper;
             _dbRepository = dbRepository;
             _config = config;
             _telegramApi.SetTelegramBotToken(config.TelegramToken);
@@ -31,14 +32,15 @@ namespace MedReminder.Services {
 
         private async void VerarbeiteNeueNachrichtWrapper(MessageEventArgs e) {
             try {
-                VerarbeiteNeueNachricht(e);
+                await VerarbeiteNeueNachricht(e);
             } catch (Exception ex) {
                 _logger.LogError(ex.ToString());
             }
         }
 
-        private async void VerarbeiteNeueNachricht(MessageEventArgs e) {
+        private async Task VerarbeiteNeueNachricht(MessageEventArgs e) {
             var chatId = e.Message.Chat.Id;
+            var benutzer = _dbRepository.GetBenutzerAusChatId(chatId);
             var nachrichtText = e.Message.Text;
 
             if (nachrichtText.Contains("/start")) return;
@@ -52,6 +54,9 @@ namespace MedReminder.Services {
                 case ChatZustand.WarteAufName:
                     await SpeichereBenutzer(chatId, nachrichtText);
                     break;
+                case ChatZustand.WarteAufUhrzeit:
+                    await SpeichereUhrzeit(benutzer, chatId, nachrichtText);
+                    break;
                 default:
                     await _telegramApi.SendeNachricht("Ich habe leider keine passende Antwort für dich ☹", chatId, true);
                     break;
@@ -60,7 +65,7 @@ namespace MedReminder.Services {
 
         private async Task NeuenBenutzerRegistrieren(long chatId) {
             await _telegramApi.SendeNachricht($"Wie heißt du ✌?", chatId, true);
-            _chatZustand[chatId] = ChatZustand.WarteAufName;
+            SpeichereChatZustand(chatId, ChatZustand.WarteAufName);
         }
 
         private async Task SpeichereBenutzer(long chatId, string nachrichtText) {
@@ -72,25 +77,48 @@ namespace MedReminder.Services {
             _dbRepository.AddBenutzer(b);
             await _telegramApi.SendeNachricht($"Willkommen, {b.Name} 😎", chatId, true);
             await _telegramApi.SendeNachricht($"Um wie viel Uhr soll ich dich erinnern?", chatId, true);
-            _chatZustand[chatId] = ChatZustand.WarteAufUhrzeit;
+            SpeichereChatZustand(chatId, ChatZustand.WarteAufUhrzeit);
+        }
+
+        private async Task SpeichereUhrzeit(Benutzer benutzer, long chatId, string nachrichtText) {
+            nachrichtText = nachrichtText.Replace(":", "");
+            if (nachrichtText.Length != 4) {
+                await _telegramApi.SendeNachricht("Die Uhrzeit muss 4 Zahlen im 24h Format enthalten (z.B. 21:00 oder 2100 für 21 Uhr", chatId, true);
+                return;
+            }
+
+            var dateTime = DateTime.ParseExact(nachrichtText, "HHmm", CultureInfo.InvariantCulture);
+            var e = new Erinnerung
+            {
+                BenutzerId = benutzer.Id,
+                UhrzeitUtc = dateTime
+            };
+            _dbRepository.SpeichereErinerung(e);
+
+            await _telegramApi.SendeNachricht($"Ich erinnere dich um {dateTime.ToString("HH:mm")} Uhr 💪", chatId, true);
+            SpeichereChatZustand(chatId, ChatZustand.Fertig);
         }
 
         private ChatZustand GetChatZustand(long chatId) {
-            if (!_chatZustand.ContainsKey(chatId)) {
-                _chatZustand.Add(chatId, ChatZustand.NichtBekannt);
-            }
-
-            return _chatZustand[chatId];
+            var zustand = _dbRepository.GetChatZustand(chatId);
+            if(zustand == null) return ChatZustand.NichtBekannt;
+            return (ChatZustand)zustand.Zustand;
         }
 
-        private void SetzteChatZustand(long chatId, ChatZustand chatZustand) {
-            _chatZustand[chatId] = chatZustand;
+        private void SpeichereChatZustand(long chatId, ChatZustand chatZustand) {
+            var zustand = new Entities.ChatZustand
+            {
+                ChatId = chatId,
+                Zustand = (int)chatZustand
+            };
+            _dbRepository.SpeichereChatZustand(zustand);
         }
     }
 
     public enum ChatZustand {
         NichtBekannt,
         WarteAufName,
-        WarteAufUhrzeit
+        WarteAufUhrzeit,
+        Fertig
     }
 }
