@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using MedReminder.Entities;
 using MedReminder.DTO;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace MedReminder.Repository
 {
@@ -13,7 +12,6 @@ namespace MedReminder.Repository
 
         public MedReminderDbContext()
         {
-
         }
 
         public MedReminderDbContext(Config config)
@@ -21,13 +19,13 @@ namespace MedReminder.Repository
             _config = config;
         }
 
-        public MedReminderDbContext(DbContextOptions<MedReminderDbContext> options, Config config)
+        public MedReminderDbContext(DbContextOptions<MedReminderDbContext> options)
             : base(options)
         {
-            _config = config;
         }
 
         public virtual DbSet<Benutzer> Benutzer { get; set; }
+        public virtual DbSet<ChatZustand> ChatZustand { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -46,6 +44,20 @@ namespace MedReminder.Repository
                     .IsUnique();
 
                 entity.Property(e => e.Id).HasDefaultValueSql("nextval('user_id_seq'::regclass)");
+            });
+
+            modelBuilder.Entity<ChatZustand>(entity =>
+            {
+                entity.HasIndex(e => e.TelegramChatId)
+                    .HasName("chat_zustand_telegram_chat_id_uindex")
+                    .IsUnique();
+
+                entity.HasOne(d => d.TelegramChat)
+                    .WithOne(p => p.ChatZustand)
+                    .HasPrincipalKey<Benutzer>(p => p.TelegramChatId)
+                    .HasForeignKey<ChatZustand>(d => d.TelegramChatId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("chat_zustand_benutzer_telegram_chat_id_fk");
             });
 
             OnModelCreatingPartial(modelBuilder);

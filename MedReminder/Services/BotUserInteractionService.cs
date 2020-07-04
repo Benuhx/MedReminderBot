@@ -5,22 +5,18 @@ using MedReminder.Entities;
 using MedReminder.Repository;
 using Telegram.Bot.Args;
 
-namespace MedReminder.Services
-{
-    public interface IBotUserInteractionService
-    {
+namespace MedReminder.Services {
+    public interface IBotUserInteractionService {
         void VerarbeiteNeueNachricht(MessageEventArgs e);
     }
 
-    public class BotUserInteractionService : IBotUserInteractionService
-    {
+    public class BotUserInteractionService : IBotUserInteractionService {
         private readonly ITelegramApi _telegramApi;
         private readonly DbRepository _dbRepository;
         private readonly Config _config;
         private readonly Dictionary<long, ChatZustand> _chatZustand;
 
-        public BotUserInteractionService(ITelegramApi telegramApi, DbRepository dbRepository, Config config)
-        {
+        public BotUserInteractionService(ITelegramApi telegramApi, DbRepository dbRepository, Config config) {
             _telegramApi = telegramApi;
             _telegramApi.NeueNachricht = VerarbeiteNeueNachricht;
             _dbRepository = dbRepository;
@@ -29,18 +25,15 @@ namespace MedReminder.Services
             _chatZustand = new Dictionary<long, ChatZustand>();
         }
 
-        public async void VerarbeiteNeueNachricht(MessageEventArgs e)
-        {
+        public async void VerarbeiteNeueNachricht(MessageEventArgs e) {
             var chatId = e.Message.Chat.Id;
             var nachrichtText = e.Message.Text;
-            if (!_chatZustand.ContainsKey(chatId))
-            {
+            if (!_chatZustand.ContainsKey(chatId)) {
                 _chatZustand.Add(chatId, ChatZustand.NichtBekannt);
             }
             var zustand = _chatZustand[chatId];
 
-            switch (zustand)
-            {
+            switch (zustand) {
                 case ChatZustand.NichtBekannt:
                     await NeuenBenutzerRegistrieren(chatId);
                     break;
@@ -50,14 +43,12 @@ namespace MedReminder.Services
             }
         }
 
-        private async Task NeuenBenutzerRegistrieren(long chatId)
-        {
+        private async Task NeuenBenutzerRegistrieren(long chatId) {
             await _telegramApi.SendeNachricht($"Wie heißt du ✌?", chatId, true);
             _chatZustand[chatId] = ChatZustand.WarteAufName;
         }
 
-        private async Task SpeichereBenutzer(long chatId, string nachrichtText)
-        {
+        private async Task SpeichereBenutzer(long chatId, string nachrichtText) {
             var b = new Benutzer
             {
                 Name = nachrichtText,
@@ -69,14 +60,12 @@ namespace MedReminder.Services
             _chatZustand[chatId] = ChatZustand.WarteAufUhrzeit;
         }
 
-        private bool BenutzerIstBekannt(long chatId)
-        {
+        private bool BenutzerIstBekannt(long chatId) {
             return _dbRepository.ChatIdExistiert(chatId);
         }
     }
 
-    public enum ChatZustand
-    {
+    public enum ChatZustand {
         NichtBekannt,
         WarteAufName,
         WarteAufUhrzeit
