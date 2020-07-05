@@ -3,7 +3,8 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-Docker/files/
+Docker/filesLinux64/
+Docker/filesLinuxArm/
 
 # User-specific files
 *.rsuser
