@@ -22,6 +22,8 @@ namespace MedReminder.Entities
         public DateTime UhrzeitUtc { get; set; }
         [Column("gueltig_ab_datim")]
         public DateTime GueltigAbDatim { get; set; }
+        [Column("zusaetzliche_erinnerung")]
+        public DateTime? ZusaetzlicheErinnerung { get; set; }
 
         [ForeignKey(nameof(BenutzerId))]
         [InverseProperty("Erinnerung")]

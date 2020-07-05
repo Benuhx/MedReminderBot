@@ -3,6 +3,7 @@ namespace MedReminder.Services {
         NichtBekannt,
         WarteAufName,
         WarteAufUhrzeit,
-        Fertig
+        Fertig,
+        WarteAufBestaetigungDerErinnerung
     }
 }

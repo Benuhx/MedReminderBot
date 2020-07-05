@@ -35,15 +35,29 @@ namespace MedReminder.Repository {
             return d.Benutzer.SingleOrDefault(x => x.Id == b.Id).TelegramChatId;
         }
 
-        public void SpeichereErinerung(Erinnerung e) {
+        public void SpeichereErinnerung(Erinnerung e) {
             using var d = Gdc();
-            d.Erinnerung.Add(e);
+            var dbErinnerung = d.Erinnerung.FirstOrDefault(x => x.Id == e.Id);
+            if (dbErinnerung == null) {
+                d.Erinnerung.Add(e);
+                d.SaveChanges();
+                return;
+            }
+            d.Erinnerung.Update(dbErinnerung);
+            dbErinnerung.GueltigAbDatim = e.GueltigAbDatim;
+            dbErinnerung.UhrzeitUtc = e.UhrzeitUtc;
+            dbErinnerung.ZusaetzlicheErinnerung = e.ZusaetzlicheErinnerung;
             d.SaveChanges();
         }
 
         public ChatZustand GetChatZustand(long chatId) {
             using var d = Gdc();
             return d.ChatZustand.SingleOrDefault(x => x.ChatId == chatId);
+        }
+
+        public Erinnerung GetErinnerung(Benutzer b) {
+            using var d = Gdc();
+            return d.Erinnerung.SingleOrDefault(x => x.BenutzerId == b.Id);
         }
 
         public void SpeichereChatZustand(ChatZustand zustand) {
@@ -67,10 +81,27 @@ namespace MedReminder.Repository {
 
             var faelligeErinnerungenNochNichtGesendet = d.Erinnerung
                 .Where(x => x.GueltigAbDatim >= curDate && x.UhrzeitUtc <= curTime)
-                .Where(x => !x.ErinnerungGesendet.Any(x => x.GesendetUm.Date == curDate))
-                .Include(x => x.Benutzer);
+                .Where(x => !x.ErinnerungGesendet.Any(x => x.GesendetUm.Date == curDate && !x.IstZusaetzlicheErinnerung))
+                .Include(x => x.Benutzer)
+                .ToList();
 
-            return faelligeErinnerungenNochNichtGesendet.ToList();
+            return faelligeErinnerungenNochNichtGesendet;
+        }
+
+        public List<Erinnerung> GetZusaetzlicheErinnerungen() {
+            using var d = Gdc();
+            var curDate = DateTime.UtcNow.Date;
+            var curTime = DateTime.UtcNow;
+            curTime = new DateTime(2000, 1, 1, curTime.Hour, curTime.Minute, 0);
+
+            var faelligeErinnerungenNochNichtGesendet = d.Erinnerung
+                .Where(x => x.ZusaetzlicheErinnerung != null)
+                .Where(x => x.GueltigAbDatim >= curDate && x.ZusaetzlicheErinnerung <= curTime)
+                .Where(x => !x.ErinnerungGesendet.Any(x => x.GesendetUm.Date == curDate && x.IstZusaetzlicheErinnerung))
+                .Include(x => x.Benutzer)
+                .ToList();
+
+            return faelligeErinnerungenNochNichtGesendet;
         }
 
         public void SpeichereErinnerungGesendet(ErinnerungGesendet e) {
@@ -78,8 +109,6 @@ namespace MedReminder.Repository {
             d.ErinnerungGesendet.Add(e);
             d.SaveChanges();
         }
-
-
 
         private MedReminderDbContext Gdc() {
             return new MedReminderDbContext(_config);

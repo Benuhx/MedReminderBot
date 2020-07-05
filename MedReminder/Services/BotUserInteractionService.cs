@@ -10,7 +10,7 @@ using Telegram.Bot.Args;
 
 namespace MedReminder.Services {
     public interface IBotUserInteractionService {
-        Task SendeErinnerung(Erinnerung e);
+        Task SendeErinnerung(Erinnerung e, bool istZusaetzlicheErinnerung);
     }
 
     public class BotUserInteractionService : IBotUserInteractionService {
@@ -26,8 +26,23 @@ namespace MedReminder.Services {
             _dbRepository = dbRepository;
             _telegramApi.SetTelegramBotToken(config.TelegramToken);
             _logger = logger;
-            _smilies = new List<string> { ":)", "😀", "😛", "😉" };
+            _smilies = new List<string> { ":)", "😀", "😛", "😉", "😺" };
             _random = new Random();
+        }
+
+        public async Task SendeErinnerung(Erinnerung e, bool istZusaetzlicheErinnerung) {
+            var smiley = GetRandomSmiley();
+            var chatId = _dbRepository.GetChatIdFromBenutzer(e.Benutzer);
+            SpeichereChatZustand(chatId, ZustandChat.WarteAufBestaetigungDerErinnerung);
+            await _telegramApi.SendeNachricht($"Hey {e.Benutzer.Name} 😎{Environment.NewLine}Denke an deine Tablette {smiley}{Environment.NewLine}{Environment.NewLine}Antworte mit 'Ok', wenn du deine Tablette genommen hast.{Environment.NewLine}Du kannst mir auch mit einer Uhrzeit antworten, wenn du später erinnert werden möchtest.{Environment.NewLine}Wenn du mir nicht antwortest, erinnere ich dich in einer Stunde nochmal {GetRandomSmiley()}", chatId);
+
+            var eg = new ErinnerungGesendet
+            {
+                ErinnerungId = e.Id,
+                GesendetUm = DateTime.UtcNow,
+                IstZusaetzlicheErinnerung = istZusaetzlicheErinnerung
+            };
+            _dbRepository.SpeichereErinnerungGesendet(eg);
         }
 
         private async void VerarbeiteNeueNachrichtWrapper(MessageEventArgs e) {
@@ -57,6 +72,9 @@ namespace MedReminder.Services {
                 case ZustandChat.WarteAufUhrzeit:
                     await SpeichereUhrzeit(benutzer, chatId, nachrichtText);
                     break;
+                case ZustandChat.WarteAufBestaetigungDerErinnerung:
+                    await AntwortAufErinnerung(benutzer, chatId, nachrichtText);
+                    break;
                 default:
                     await _telegramApi.SendeNachricht("Ich habe leider keine passende Antwort für dich ☹", chatId);
                     break;
@@ -81,44 +99,47 @@ namespace MedReminder.Services {
         }
 
         private async Task SpeichereUhrzeit(Benutzer benutzer, long chatId, string nachrichtText) {
-            nachrichtText = nachrichtText.Replace(":", "");
-
-            if (nachrichtText.Length == 2 && int.TryParse(nachrichtText, out int number) && number >= 0 && number <= 24) {
-                nachrichtText = $"{nachrichtText}00";
-            }
-
-            var parseErfolgreich = DateTime.TryParseExact(nachrichtText, "HHmm", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out DateTime uhrzeitErinnerung);
-            if (!parseErfolgreich) {
+            var uhrzeitErinnerung = ParseUhrzeitAusNachricht(nachrichtText);
+            if (uhrzeitErinnerung == null) {
                 await _telegramApi.SendeNachricht($"Deine Eingabe ist keine valide Uhrzeit 🤨. Probiere es mit z.B. mit 21:00 für 21 Uhr", chatId);
                 return;
             }
 
-            uhrzeitErinnerung = new DateTime(2000, 1, 1, uhrzeitErinnerung.Hour, uhrzeitErinnerung.Minute, 0);
-            uhrzeitErinnerung = DateTime.SpecifyKind(uhrzeitErinnerung, DateTimeKind.Local);
-
             var e = new Erinnerung
             {
                 BenutzerId = benutzer.Id,
-                UhrzeitUtc = uhrzeitErinnerung.ToUniversalTime(),
+                UhrzeitUtc = uhrzeitErinnerung.Item1,
                 GueltigAbDatim = DateTime.UtcNow.Date
             };
-            _dbRepository.SpeichereErinerung(e);
+            _dbRepository.SpeichereErinnerung(e);
 
             SpeichereChatZustand(chatId, ZustandChat.Fertig);
-            await _telegramApi.SendeNachricht($"Ich erinnere dich um {uhrzeitErinnerung:HH:mm} Uhr 💪", chatId);
+            await _telegramApi.SendeNachricht($"Ich erinnere dich um {uhrzeitErinnerung.Item2:HH:mm} Uhr 💪", chatId);
         }
 
-        public async Task SendeErinnerung(Erinnerung e) {
-            var smiley = GetRandomSmiley();
-            var chatId = _dbRepository.GetChatIdFromBenutzer(e.Benutzer);
+        private async Task AntwortAufErinnerung(Benutzer benutzer, long chatId, string nachrichtText) {
+            Erinnerung erinnerung;
+            if (nachrichtText.ToLower().Contains("ok")) {
+                SpeichereChatZustand(chatId, ZustandChat.Fertig);
 
-            await _telegramApi.SendeNachricht($"Hey {e.Benutzer.Name} 😎{Environment.NewLine}Denke an deine Tablette {smiley}", chatId);
-            var eg = new ErinnerungGesendet
-            {
-                ErinnerungId = e.Id,
-                GesendetUm = DateTime.UtcNow
-            };
-            _dbRepository.SpeichereErinnerungGesendet(eg);
+                erinnerung = _dbRepository.GetErinnerung(benutzer);
+                erinnerung.ZusaetzlicheErinnerung = null;
+                _dbRepository.SpeichereErinnerung(erinnerung);
+
+                await _telegramApi.SendeNachricht($"Super 😎 Ich habe vermerkt, dass du eine Tablette genommen hast {GetRandomSmiley()}", chatId);
+                return;
+            }
+
+            var uhrzeitErinnerung = ParseUhrzeitAusNachricht(nachrichtText);
+            if (uhrzeitErinnerung == null) {
+                await _telegramApi.SendeNachricht($"Deine Eingabe ist keine valide Uhrzeit 🤨. Probiere es mit z.B. mit 21:00 für 21 Uhr", chatId);
+                return;
+            }
+
+            erinnerung = _dbRepository.GetErinnerung(benutzer);
+            erinnerung.ZusaetzlicheErinnerung = uhrzeitErinnerung.Item1;
+            _dbRepository.SpeichereErinnerung(erinnerung);
+            await _telegramApi.SendeNachricht($"Ich habe die spätere Erinnerung um {uhrzeitErinnerung.Item2:HHmm} Uhr gespeichert {GetRandomSmiley()}", chatId);
         }
 
         private ZustandChat GetChatZustand(long chatId) {
@@ -128,7 +149,7 @@ namespace MedReminder.Services {
         }
 
         private void SpeichereChatZustand(long chatId, ZustandChat chatZustand) {
-            var zustand = new Entities.ChatZustand
+            var zustand = new ChatZustand
             {
                 ChatId = chatId,
                 Zustand = (int)chatZustand
@@ -139,6 +160,28 @@ namespace MedReminder.Services {
         private string GetRandomSmiley() {
             var r = _random.Next(0, _smilies.Count);
             return _smilies[r];
+        }
+
+        private Tuple<DateTime, DateTime> ParseUhrzeitAusNachricht(string nachrichtText) {
+            nachrichtText = nachrichtText.Replace(":", "");
+
+            if (nachrichtText.Length == 2 && int.TryParse(nachrichtText, out int number) && number >= 0 && number <= 24) {
+                nachrichtText = $"{nachrichtText}00";
+            }
+
+            var parseErfolgreich = DateTime.TryParseExact(nachrichtText, "HHmm", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime uhrzeitErinnerung);
+            if (!parseErfolgreich) {
+                return null;
+            }
+
+            var uhrzeitErinnerungUtc = TimeZoneInfo.ConvertTimeToUtc(uhrzeitErinnerung);
+            uhrzeitErinnerungUtc = new DateTime(2000, 1, 1, uhrzeitErinnerungUtc.Hour, uhrzeitErinnerungUtc.Minute, 0);
+            uhrzeitErinnerungUtc = DateTime.SpecifyKind(uhrzeitErinnerungUtc, DateTimeKind.Utc);
+
+            uhrzeitErinnerung = new DateTime(2000, 1, 1, uhrzeitErinnerung.Hour, uhrzeitErinnerung.Minute, 0);
+            uhrzeitErinnerung = DateTime.SpecifyKind(uhrzeitErinnerung, DateTimeKind.Utc);
+
+            return new Tuple<DateTime, DateTime>(uhrzeitErinnerungUtc, uhrzeitErinnerung);
         }
     }
 }

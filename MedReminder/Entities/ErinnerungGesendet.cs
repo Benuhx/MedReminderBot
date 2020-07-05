@@ -15,6 +15,8 @@ namespace MedReminder.Entities
         public int ErinnerungId { get; set; }
         [Column("gesendet_um")]
         public DateTime GesendetUm { get; set; }
+        [Column("ist_zusaetzliche_erinnerung")]
+        public bool IstZusaetzlicheErinnerung {get; set;}
 
         [ForeignKey(nameof(ErinnerungId))]
         [InverseProperty("ErinnerungGesendet")]

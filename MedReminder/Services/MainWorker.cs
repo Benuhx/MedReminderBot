@@ -25,10 +25,15 @@ namespace MedReminder.Services {
 
         public async Task Run() {
             _logger.LogInformation($"Ist gestart um {DateTime.Now}");
+
             while (true) {
                 var faelligeErinnerungen = _dbRepository.GetFaelligeErinnerungen();
 
-                var tasks = faelligeErinnerungen.Select(x => _botUserInteractionService.SendeErinnerung(x)).ToArray();
+                var tasks = faelligeErinnerungen.Select(x => _botUserInteractionService.SendeErinnerung(x, false)).ToArray();
+                Task.WaitAll(tasks);
+
+                var zusaetzlicheErinnerungen = _dbRepository.GetZusaetzlicheErinnerungen();
+                tasks = zusaetzlicheErinnerungen.Select(x => _botUserInteractionService.SendeErinnerung(x, true)).ToArray();
                 Task.WaitAll(tasks);
 
                 await Task.Delay(TimeSpan.FromSeconds(5));
