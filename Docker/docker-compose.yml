@@ -1,0 +1,9 @@
+# Aktuell für die Datenbank und deren Verwaltung
+version: "3.7"
+services:
+  med-reminder:
+    image: med-reminder
+    volumes:        
+        - type: bind
+          source: "C:/Users/janni/Desktop/Git/Web/MedReminder/Docker/config.yaml"
+          target: /App/config.yaml
