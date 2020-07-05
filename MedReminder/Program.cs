@@ -13,7 +13,7 @@ namespace MedReminder {
             using var container = ConfigureDependencyInjectionAndCreateContainer();
             var configReader = container.GetInstance<YamlConfigService>();
             var logger = container.GetInstance<ILogger<Program>>();
-            logger.LogInformation($"Hey :) Programm.cs startet um {DateTime.Now}");
+            logger.LogInformation($"Hey :) Programm.cs startet u m {DateTime.Now}");
             if (!configReader.ConfigFileExists()) {
                 logger.LogError($"Kein Configfile gefunden. Schreibe Default File und beende die App");
                 configReader.WriteDefaultConfig();

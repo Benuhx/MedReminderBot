@@ -1,11 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MedReminder.DTO;
-using MedReminder.Entities;
 using MedReminder.Repository;
 using Microsoft.Extensions.Logging;
-using Telegram.Bot.Args;
 
 namespace MedReminder.Services {
     public interface IMainWorker {
@@ -28,15 +26,18 @@ namespace MedReminder.Services {
 
             while (true) {
                 var faelligeErinnerungen = _dbRepository.GetFaelligeErinnerungen();
-
-                var tasks = faelligeErinnerungen.Select(x => _botUserInteractionService.SendeErinnerung(x, false)).ToArray();
+                var tasks = faelligeErinnerungen.Select(x => _botUserInteractionService.SendeErinnerung(x, ErinnerungsTyp.ErsteErinnerung)).ToArray();
                 Task.WaitAll(tasks);
 
                 var zusaetzlicheErinnerungen = _dbRepository.GetZusaetzlicheErinnerungen();
-                tasks = zusaetzlicheErinnerungen.Select(x => _botUserInteractionService.SendeErinnerung(x, true)).ToArray();
+                tasks = zusaetzlicheErinnerungen.Select(x => _botUserInteractionService.SendeErinnerung(x, ErinnerungsTyp.ZusaetzlicheErinnerung)).ToArray();
                 Task.WaitAll(tasks);
 
-                _logger.LogInformation($"Läuft um {DateTime.Now}{Environment.NewLine}{faelligeErinnerungen.Count} Erinnerungen verschickt{Environment.NewLine}{zusaetzlicheErinnerungen.Count} zusaetzliche Erinnerungen verschickt");
+                var ueberfaelligeErinnerungen = _dbRepository.GetUeberfaelligeErinnerungen();
+                tasks = ueberfaelligeErinnerungen.Select(x => _botUserInteractionService.SendeErinnerung(x, ErinnerungsTyp.UeberfaelligeErinnerung)).ToArray();
+                Task.WaitAll(tasks);
+
+                _logger.LogInformation($"Läuft um {DateTime.Now}{Environment.NewLine}{faelligeErinnerungen.Count} Erinnerungen verschickt{Environment.NewLine}{zusaetzlicheErinnerungen.Count} zusaetzliche Erinnerungen verschickt{Environment.NewLine}{ueberfaelligeErinnerungen.Count} überfällige Erinnerungen verschickt");
 
                 await Task.Delay(TimeSpan.FromSeconds(5));
             }

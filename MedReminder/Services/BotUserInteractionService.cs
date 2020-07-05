@@ -10,7 +10,7 @@ using Telegram.Bot.Args;
 
 namespace MedReminder.Services {
     public interface IBotUserInteractionService {
-        Task SendeErinnerung(Erinnerung e, bool istZusaetzlicheErinnerung);
+        Task SendeErinnerung(Erinnerung e, ErinnerungsTyp erinnerungsTyp);
     }
 
     public class BotUserInteractionService : IBotUserInteractionService {
@@ -30,17 +30,29 @@ namespace MedReminder.Services {
             _random = new Random();
         }
 
-        public async Task SendeErinnerung(Erinnerung e, bool istZusaetzlicheErinnerung) {
+        public async Task SendeErinnerung(Erinnerung e, ErinnerungsTyp erinnerungsTyp) {
             var smiley = GetRandomSmiley();
             var chatId = _dbRepository.GetChatIdFromBenutzer(e.Benutzer);
             SpeichereChatZustand(chatId, ZustandChat.WarteAufBestaetigungDerErinnerung);
-            await _telegramApi.SendeNachricht($"Hey {e.Benutzer.Name} 😎{Environment.NewLine}Denke an deine Tablette {smiley}{Environment.NewLine}{Environment.NewLine}1️⃣ Antworte mit 'Ok', wenn du deine Tablette genommen hast.{Environment.NewLine}2️⃣ Du kannst mir auch mit einer Uhrzeit antworten, wenn du später erinnert werden möchtest.{Environment.NewLine}3️⃣Wenn du mir nicht antwortest, erinnere ich dich in einer Stunde nochmal {GetRandomSmiley()}", chatId);
+
+            if (erinnerungsTyp == ErinnerungsTyp.ZusaetzlicheErinnerung) {
+                _dbRepository.LoescheZusatzlicheErinnerung(e);
+            }
+
+            var zusätzlicherText = string.Empty;
+            if (erinnerungsTyp == ErinnerungsTyp.UeberfaelligeErinnerung) {
+                zusätzlicherText= $"🤖 Automatische Erinnerung nach einer Stunde 🤖{Environment.NewLine}{Environment.NewLine}";
+            } else if (erinnerungsTyp == ErinnerungsTyp.ZusaetzlicheErinnerung) {
+                zusätzlicherText = $"⌚ Zusätzliche Erinnerung ⌚{Environment.NewLine}{Environment.NewLine}";
+            }
+
+            await _telegramApi.SendeNachricht($"{zusätzlicherText}Hey {e.Benutzer.Name} 😎{Environment.NewLine}Denke an deine Tablette {smiley}{Environment.NewLine}{Environment.NewLine}1️⃣ Antworte mit 'Ok', wenn du deine Tablette genommen hast.{Environment.NewLine}2️⃣ Du kannst mir auch mit einer Uhrzeit antworten, wenn du später erinnert werden möchtest.{Environment.NewLine}3️⃣Wenn du mir nicht antwortest, erinnere ich dich in einer Stunde nochmal {GetRandomSmiley()}", chatId);
 
             var eg = new ErinnerungGesendet
             {
                 ErinnerungId = e.Id,
                 GesendetUm = DateTime.UtcNow,
-                IstZusaetzlicheErinnerung = istZusaetzlicheErinnerung
+                IstZusaetzlicheErinnerung = erinnerungsTyp == ErinnerungsTyp.ZusaetzlicheErinnerung
             };
             _dbRepository.SpeichereErinnerungGesendet(eg);
         }

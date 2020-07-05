@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MedReminder.DTO;
 using MedReminder.Entities;
+using MedReminder.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedReminder.Repository {
@@ -104,6 +105,23 @@ namespace MedReminder.Repository {
             return faelligeErinnerungenNochNichtGesendet;
         }
 
+        public List<Erinnerung> GetUeberfaelligeErinnerungen() {
+            using var d = Gdc();
+            var curDate = DateTime.UtcNow.Date;
+            var curTime = DateTime.UtcNow;
+
+            var ueberfaelligeErinnerungen =
+            d.ChatZustand
+            .Where(x => x.Zustand == (int) ZustandChat.WarteAufBestaetigungDerErinnerung)
+            .SelectMany(x => x.Benutzer.Erinnerung)
+            .Where(X => X.ZusaetzlicheErinnerung == null)
+            .Where(x => curTime >= x.ErinnerungGesendet.Where(y => y.ErinnerungId == x.Id).Max(y => y.GesendetUm).AddHours(1))
+            .Include(x => x.Benutzer)
+            .ToList();
+
+            return ueberfaelligeErinnerungen;
+        }
+
         public void SpeichereErinnerungGesendet(ErinnerungGesendet e) {
             using var d = Gdc();
             d.ErinnerungGesendet.Add(e);
@@ -113,6 +131,13 @@ namespace MedReminder.Repository {
         public void LoescheErinnerungGesendet(int erinnerungId, bool istZusaetzlicheErinnerung) {
             using var d = Gdc();
             d.Database.ExecuteSqlInterpolated($"Delete from erinnerung_gesendet eg where eg.erinnerung_id = {erinnerungId} and eg.ist_zusaetzliche_erinnerung = {istZusaetzlicheErinnerung}");
+        }
+
+        public void LoescheZusatzlicheErinnerung(Erinnerung e) {
+            using var d = Gdc();
+            d.Erinnerung.Update(e);
+            e.ZusaetzlicheErinnerung = null;
+            d.SaveChanges();
         }
 
         public void ResetFuerChatId(long chatId) {
