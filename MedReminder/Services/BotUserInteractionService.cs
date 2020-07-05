@@ -34,7 +34,7 @@ namespace MedReminder.Services {
             var smiley = GetRandomSmiley();
             var chatId = _dbRepository.GetChatIdFromBenutzer(e.Benutzer);
             SpeichereChatZustand(chatId, ZustandChat.WarteAufBestaetigungDerErinnerung);
-            await _telegramApi.SendeNachricht($"Hey {e.Benutzer.Name} 😎{Environment.NewLine}Denke an deine Tablette {smiley}{Environment.NewLine}{Environment.NewLine}Antworte mit 'Ok', wenn du deine Tablette genommen hast.{Environment.NewLine}Du kannst mir auch mit einer Uhrzeit antworten, wenn du später erinnert werden möchtest.{Environment.NewLine}Wenn du mir nicht antwortest, erinnere ich dich in einer Stunde nochmal {GetRandomSmiley()}", chatId);
+            await _telegramApi.SendeNachricht($"Hey {e.Benutzer.Name} 😎{Environment.NewLine}Denke an deine Tablette {smiley}{Environment.NewLine}{Environment.NewLine}1️⃣ Antworte mit 'Ok', wenn du deine Tablette genommen hast.{Environment.NewLine}2️⃣ Du kannst mir auch mit einer Uhrzeit antworten, wenn du später erinnert werden möchtest.{Environment.NewLine}3️⃣Wenn du mir nicht antwortest, erinnere ich dich in einer Stunde nochmal {GetRandomSmiley()}", chatId);
 
             var eg = new ErinnerungGesendet
             {
@@ -139,7 +139,8 @@ namespace MedReminder.Services {
             erinnerung = _dbRepository.GetErinnerung(benutzer);
             erinnerung.ZusaetzlicheErinnerung = uhrzeitErinnerung.Item1;
             _dbRepository.SpeichereErinnerung(erinnerung);
-            await _telegramApi.SendeNachricht($"Ich habe die spätere Erinnerung um {uhrzeitErinnerung.Item2:HHmm} Uhr gespeichert {GetRandomSmiley()}", chatId);
+            _dbRepository.LoescheErinnerungGesendet(erinnerung.Id, true);
+            await _telegramApi.SendeNachricht($"Ich habe die spätere Erinnerung um {uhrzeitErinnerung.Item2:HH:mm} Uhr gespeichert {GetRandomSmiley()}", chatId);
         }
 
         private ZustandChat GetChatZustand(long chatId) {

@@ -110,6 +110,11 @@ namespace MedReminder.Repository {
             d.SaveChanges();
         }
 
+        public void LoescheErinnerungGesendet(int erinnerungId, bool istZusaetzlicheErinnerung) {
+            using var d = Gdc();
+            d.Database.ExecuteSqlInterpolated($"Delete from erinnerung_gesendet eg where eg.erinnerung_id = {erinnerungId} and eg.ist_zusaetzliche_erinnerung = {istZusaetzlicheErinnerung}");
+        }
+
         private MedReminderDbContext Gdc() {
             return new MedReminderDbContext(_config);
         }
