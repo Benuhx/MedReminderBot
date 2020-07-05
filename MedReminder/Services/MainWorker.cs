@@ -36,8 +36,9 @@ namespace MedReminder.Services {
                 tasks = zusaetzlicheErinnerungen.Select(x => _botUserInteractionService.SendeErinnerung(x, true)).ToArray();
                 Task.WaitAll(tasks);
 
+                _logger.LogInformation($"Läuft um {DateTime.Now}{Environment.NewLine}{faelligeErinnerungen.Count} Erinnerungen verschickt{Environment.NewLine}{zusaetzlicheErinnerungen.Count} zusaetzliche Erinnerungen verschickt");
+
                 await Task.Delay(TimeSpan.FromSeconds(5));
-                _logger.LogInformation($"Läuft um {DateTime.Now}");
             }
         }
     }

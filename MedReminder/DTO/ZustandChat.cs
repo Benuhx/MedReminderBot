@@ -4,6 +4,7 @@ namespace MedReminder.Services {
         WarteAufName,
         WarteAufUhrzeit,
         Fertig,
-        WarteAufBestaetigungDerErinnerung
+        WarteAufBestaetigungDerErinnerung,
+        ResetStart
     }
 }

@@ -60,6 +60,11 @@ namespace MedReminder.Services {
 
             if (nachrichtText.Contains("/start")) return;
 
+            if (nachrichtText.ToLower().Contains("reset")) {
+                await ResetStart(chatId);
+                return;
+            }
+
             var chatZustand = GetChatZustand(chatId);
 
             switch (chatZustand) {
@@ -75,9 +80,11 @@ namespace MedReminder.Services {
                 case ZustandChat.WarteAufBestaetigungDerErinnerung:
                     await AntwortAufErinnerung(benutzer, chatId, nachrichtText);
                     break;
-                default:
-                    await _telegramApi.SendeNachricht("Ich habe leider keine passende Antwort für dich ☹", chatId);
+                case ZustandChat.ResetStart:
+                    await AntwortAufReset(chatId, nachrichtText);
                     break;
+                default:
+                    await _telegramApi.SendeNachricht($"Ich habe leider keine passende Antwort für dich ☹{Environment.NewLine}1️⃣ Wenn du die Erinnerungen deaktivieren möchtest, kann du mir eine Nachricht mit 'reset' schreiben", chatId); break;
             }
         }
 
@@ -141,6 +148,22 @@ namespace MedReminder.Services {
             _dbRepository.SpeichereErinnerung(erinnerung);
             _dbRepository.LoescheErinnerungGesendet(erinnerung.Id, true);
             await _telegramApi.SendeNachricht($"Ich habe die spätere Erinnerung um {uhrzeitErinnerung.Item2:HH:mm} Uhr gespeichert {GetRandomSmiley()}", chatId);
+        }
+
+        private async Task ResetStart(long chatId) {
+            SpeichereChatZustand(chatId, ZustandChat.ResetStart);
+            await _telegramApi.SendeNachricht("Wenn mich zurücksetzen möchtest, werden die Erinnerungen deakitivert. Möchtest du fortfahren (ja / nein)?", chatId);
+        }
+
+        private async Task AntwortAufReset(long chatId, string nachrichtText) {
+            nachrichtText = nachrichtText.ToLower();
+            if (nachrichtText == "ja" || nachrichtText == "j") {
+                _dbRepository.ResetFuerChatId(chatId);
+                await _telegramApi.SendeNachricht($"Reset erfolgreich 😢{Environment.NewLine}Du kannst mir erneut schreiben, wenn du möchtest.{Environment.NewLine}Ich habe dann aber alles über dich vergessen", chatId);
+                return;
+            }
+            SpeichereChatZustand(chatId, ZustandChat.Fertig);
+            await _telegramApi.SendeNachricht("Kein Reset durchgeführt", chatId);
         }
 
         private ZustandChat GetChatZustand(long chatId) {

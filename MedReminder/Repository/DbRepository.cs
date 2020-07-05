@@ -115,6 +115,17 @@ namespace MedReminder.Repository {
             d.Database.ExecuteSqlInterpolated($"Delete from erinnerung_gesendet eg where eg.erinnerung_id = {erinnerungId} and eg.ist_zusaetzliche_erinnerung = {istZusaetzlicheErinnerung}");
         }
 
+        public void ResetFuerChatId(long chatId) {
+            using var d = Gdc();
+            var benutzer = d.Benutzer.SingleOrDefault(x => x.TelegramChatId == chatId);
+            if (benutzer != null) {
+                //erinnerung_gesendet ist cascade delete
+                d.Database.ExecuteSqlInterpolated($"delete from erinnerung e where e.benutzer_id = {benutzer.Id};");
+                d.Database.ExecuteSqlInterpolated($"delete from benutzer b where b.id = {benutzer.Id};");
+            }
+            d.Database.ExecuteSqlInterpolated($"delete from chat_zustand where chat_id = {chatId};");
+        }
+
         private MedReminderDbContext Gdc() {
             return new MedReminderDbContext(_config);
         }
