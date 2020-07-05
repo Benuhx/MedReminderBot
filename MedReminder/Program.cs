@@ -12,12 +12,16 @@ namespace MedReminder {
         public static async Task Main() {
             using var container = ConfigureDependencyInjectionAndCreateContainer();
             var configReader = container.GetInstance<YamlConfigService>();
+            var logger = container.GetInstance<ILogger<Program>>();
+            logger.LogInformation($"Hey :) Programm.cs startet um {DateTime.Now}");
             if (!configReader.ConfigFileExists()) {
+                logger.LogError($"Kein Configfile gefunden. Schreibe Default File und beende die App");
                 configReader.WriteDefaultConfig();
                 return;
             }
             var config = await configReader.ReadConfig();
             container.Inject<Config>(config);
+            logger.LogInformation($"Configfile gefunden und geladen");
 
             var mainWorker = container.GetInstance<IMainWorker>();
             await mainWorker.Run();
