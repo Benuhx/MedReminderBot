@@ -5,6 +5,7 @@
 
 Docker/filesLinux64/
 Docker/filesLinuxArm/
+config.yaml
 
 # User-specific files
 *.rsuser

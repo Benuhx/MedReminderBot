@@ -16,13 +16,14 @@ namespace MedReminder.Services {
     }
 
     public class YamlConfigService : IYamlConfigService {
-        private readonly string _configFilePath;
+        private readonly string _configFileName;
+        private string _configFilePath;
         private readonly ILogger<YamlConfigService> _logger;
 
         public YamlConfigService(ILogger<YamlConfigService> logger) {
             _logger = logger;
-            var currentDir = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-            _configFilePath = Path.Combine(currentDir, "config.yaml");
+            _configFileName = "config.yaml";
+            _configFilePath = GetConfigFilePath();
         }
 
         public bool ConfigFileExists() {
@@ -54,6 +55,20 @@ namespace MedReminder.Services {
 
             if (File.Exists(_configFilePath)) File.Delete(_configFilePath);
             File.WriteAllText(_configFilePath, yaml);
+        }
+
+        private string GetConfigFilePath() {
+             var curDir = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+             while(!File.Exists(Path.Combine(curDir, _configFileName))) {
+                 _logger.LogDebug($"Keine {_configFileName} im Ordner {curDir} gefunden. Navigiere einen Ordner höher");
+                 var parentDir = Directory.GetParent(curDir);
+                 if(parentDir == null) {
+                     throw new FileNotFoundException($"Es wurde keine {_configFilePath} gefunden. Aktuelles Verzeichnis: {curDir}");
+                 }
+                 curDir = parentDir.FullName;
+             }
+             _logger.LogInformation($"Nutze {_configFileName} im Ordner {curDir} gefunden");
+             return Path.Combine(curDir, _configFileName);
         }
     }
 }
