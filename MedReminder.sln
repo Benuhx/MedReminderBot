@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.30128.74
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedReminder", "MedReminder\MedReminder.csproj", "{AA42F28C-2A66-4D49-966F-52EFFA99FB80}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedReminder.Tests", "MedReminder.Tests\MedReminder.Tests.csproj", "{80DADAD7-BA5F-45CF-B752-22E30F8188AC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{AA42F28C-2A66-4D49-966F-52EFFA99FB80}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AA42F28C-2A66-4D49-966F-52EFFA99FB80}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AA42F28C-2A66-4D49-966F-52EFFA99FB80}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80DADAD7-BA5F-45CF-B752-22E30F8188AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80DADAD7-BA5F-45CF-B752-22E30F8188AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80DADAD7-BA5F-45CF-B752-22E30F8188AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80DADAD7-BA5F-45CF-B752-22E30F8188AC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
