@@ -99,7 +99,7 @@ namespace MedReminder.Repository {
 
             var faelligeErinnerungenNochNichtGesendet = d.Erinnerung
                 .Where(x => x.ZusaetzlicheErinnerung != null)
-                .Where(x => x.GueltigAbDatim >= curDate && x.ZusaetzlicheErinnerung <= curTime)
+                .Where(x => x.GueltigAbDatim <= curDate && x.ZusaetzlicheErinnerung <= curTime)
                 .Where(x => !x.ErinnerungGesendet.Any(x => x.GesendetUm.Date == curDate && x.IstZusaetzlicheErinnerung))
                 .Include(x => x.Benutzer)
                 .ToList();

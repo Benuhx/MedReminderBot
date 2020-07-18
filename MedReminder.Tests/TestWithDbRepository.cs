@@ -2,7 +2,7 @@ using MedReminder.Repository;
 
 namespace MedReminder.Tests {
     public class TestWithDbRepositoryAndEmptyDatabase : TestWithPostgresDb {
-        protected DbRepository DbRepository;
+        protected Repository.DbRepository DbRepository;
         public TestWithDbRepositoryAndEmptyDatabase() : base() {
         }
 
