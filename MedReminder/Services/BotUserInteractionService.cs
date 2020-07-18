@@ -130,6 +130,12 @@ namespace MedReminder.Services {
                 UhrzeitUtc = uhrzeitErinnerung.Item1,
                 GueltigAbDatim = DateTime.UtcNow.Date
             };
+
+            if(e.UhrzeitUtc < new DateTime(2000 ,0 ,1, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0)) {
+                //Wenn die Uhrzeit heute schon vorbei ist, ist die Erinnerung ab morgen gültig
+                e.GueltigAbDatim = DateTime.UtcNow.Date.AddDays(1);
+            }
+
             _dbRepository.SpeichereErinnerung(e);
 
             SpeichereChatZustand(chatId, ZustandChat.Fertig);

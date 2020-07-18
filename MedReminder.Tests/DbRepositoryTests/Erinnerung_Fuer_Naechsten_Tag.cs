@@ -3,20 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using MedReminder.Entities;
 using MedReminder.Services;
-using MedReminder.Tests;
 using Moq;
 using Xunit;
 
-[assembly: CollectionBehavior(MaxParallelThreads = 1)]
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles")]
-
 namespace MedReminder.Tests.DbRepositoryTests {
-    public class Erinnerung_1_Minute_in_Vergangenheit : TestWithDbRepositoryAndEmptyDatabase {
+    public class Erinnerung_Fuer_Naechsten_Tag : TestWithDbRepositoryAndEmptyDatabase {
         private readonly List<Erinnerung> _erinnerungen;
         private readonly List<Erinnerung> _ueberfaellig;
         private readonly List<Erinnerung> _zusaetzlich;
 
-        public Erinnerung_1_Minute_in_Vergangenheit() {
+        public Erinnerung_Fuer_Naechsten_Tag() {
             var dts = new Mock<DateTimeService>();
             dts.Setup(x => x.Now).Throws(new Exception("Nur UTC ist erlaubt"));
             dts.Setup(x => x.UtcNow).Returns(new DateTime(2020, 06, 01, 12, 00, 00));
@@ -26,7 +22,8 @@ namespace MedReminder.Tests.DbRepositoryTests {
 
             DbRepository.SpeichereChatZustand(new Entities.ChatZustand()
             {
-                ChatId = 1
+                ChatId = 1,
+                Zustand = (int) ZustandChat.WarteAufBestaetigungDerErinnerung
             });
             DbRepository.AddBenutzer(new Entities.Benutzer()
             {
@@ -38,7 +35,8 @@ namespace MedReminder.Tests.DbRepositoryTests {
             {
                 Id = 1,
                 BenutzerId = 1,
-                UhrzeitUtc = new DateTime(2000, 1, 1, 11, 59, 0)
+                UhrzeitUtc = new DateTime(2000, 1, 1, 09, 00, 0),
+                GueltigAbDatim = dts.Object.UtcNow.Date.AddDays(1)
             });
 
             _erinnerungen = DbRepository.GetFaelligeErinnerungen();
@@ -47,13 +45,8 @@ namespace MedReminder.Tests.DbRepositoryTests {
         }
 
         [Fact]
-        public void findet_eine_faellige_Erinnerungen() {
-            Assert.Single(_erinnerungen);
-        }
-
-        [Fact]
-        public void findet_den_Namen_Timm() {
-            Assert.Equal("Timm", _erinnerungen.First().Benutzer.Name);
+        public void findet_keine_faellige_Erinnerungen() {
+            Assert.Empty(_erinnerungen);
         }
 
         [Fact]
