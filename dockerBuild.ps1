@@ -1,8 +1,8 @@
 Remove-Item "./Docker/filesLinux64" -Recurse -ErrorAction Ignore
 Remove-Item "./Docker/filesLinuxArm" -Recurse -ErrorAction Ignore
 
-dotnet publish -c Release -o "./Docker/filesLinux64" -r=linux-x64 --nologo --no-self-contained
-dotnet publish -c Release -o "./Docker/filesLinuxArm" -r=linux-arm --nologo --no-self-contained
+dotnet publish MedReminder/MedReminder.csproj -c Release -o "./Docker/filesLinux64" -r=linux-x64 --nologo --no-self-contained
+dotnet publish MedReminder/MedReminder.csproj -c Release -o "./Docker/filesLinuxArm" -r=linux-arm --nologo --no-self-contained
 
 cd Docker
 docker build -f Dockerfile-x64 -t benuhx/med-reminder:latest .
