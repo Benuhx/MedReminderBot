@@ -1,3 +1,10 @@
+dotnet test
+
+if ($LastExitCode -eq 1) {
+    Write-Error "Fehler bei automatischen Tests"
+    exit 1
+}
+
 Remove-Item "./Docker/filesLinux64" -Recurse -ErrorAction Ignore
 Remove-Item "./Docker/filesLinuxArm" -Recurse -ErrorAction Ignore
 
