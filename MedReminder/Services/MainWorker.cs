@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using MedReminder.Repository;
@@ -23,6 +24,7 @@ namespace MedReminder.Services {
 
         public async Task Run() {
             _logger.LogInformation($"Ist gestart um {DateTime.Now}");
+            var istDebug = Debugger.IsAttached;
 
             while (true) {
                 var faelligeErinnerungen = _dbRepository.GetFaelligeErinnerungen();
@@ -39,7 +41,12 @@ namespace MedReminder.Services {
 
                 _logger.LogInformation($"Läuft um {DateTime.Now}{Environment.NewLine}{faelligeErinnerungen.Count} Erinnerungen verschickt{Environment.NewLine}{zusaetzlicheErinnerungen.Count} zusaetzliche Erinnerungen verschickt{Environment.NewLine}{ueberfaelligeErinnerungen.Count} überfällige Erinnerungen verschickt");
 
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                if(istDebug) {
+                    await Task.Delay(TimeSpan.FromSeconds(5));
+                } else {
+                    await Task.Delay(TimeSpan.FromSeconds(60));
+                }
+
             }
         }
     }
