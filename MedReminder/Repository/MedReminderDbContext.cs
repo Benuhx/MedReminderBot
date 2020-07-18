@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using MedReminder.Entities;
 using MedReminder.DTO;
+using MedReminder.Services;
 
 namespace MedReminder.Repository {
     public partial class MedReminderDbContext : DbContext {
         private readonly Config _config;
-
         public MedReminderDbContext(Config config) {
             _config = config;
         }

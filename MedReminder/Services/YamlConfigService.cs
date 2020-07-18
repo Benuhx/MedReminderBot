@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using MedReminder.DTO;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
@@ -12,17 +8,19 @@ namespace MedReminder.Services {
     public interface IYamlConfigService {
         bool ConfigFileExists();
         void WriteDefaultConfig();
-        Task<Config> ReadConfig();
+        Config ReadConfig();
     }
 
     public class YamlConfigService : IYamlConfigService {
         private readonly string _configFileName;
-        private string _configFilePath;
+        private readonly string _configFilePath;
         private readonly ILogger<YamlConfigService> _logger;
 
-        public YamlConfigService(ILogger<YamlConfigService> logger) {
+        public YamlConfigService(ILogger<YamlConfigService> logger) : this(logger, "config.yaml") {
+        }
+        public YamlConfigService(ILogger<YamlConfigService> logger, string configFileName) {
             _logger = logger;
-            _configFileName = "config.yaml";
+            _configFileName = configFileName;
             _configFilePath = GetConfigFilePath();
         }
 
@@ -30,13 +28,13 @@ namespace MedReminder.Services {
             return File.Exists(_configFilePath);
         }
 
-        public async Task<Config> ReadConfig() {
+        public Config ReadConfig() {
             var deserializer = new Deserializer();
 
             if (!ConfigFileExists())
                 _logger.LogError($"Should read config file, but File '{_configFilePath}' does not exist");
 
-            var fileContent = await File.ReadAllTextAsync(_configFilePath);
+            var fileContent = File.ReadAllText(_configFilePath);
             var config = deserializer.Deserialize<Config>(fileContent);
             return config;
         }
@@ -58,7 +56,7 @@ namespace MedReminder.Services {
         }
 
         private string GetConfigFilePath() {
-             var curDir = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+             var curDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
              while(!File.Exists(Path.Combine(curDir, _configFileName))) {
                  _logger.LogDebug($"Keine {_configFileName} im Ordner {curDir} gefunden. Navigiere einen Ordner höher");
                  var parentDir = Directory.GetParent(curDir);

@@ -10,9 +10,11 @@ using Microsoft.EntityFrameworkCore;
 namespace MedReminder.Repository {
     public class DbRepository {
         private readonly Config _config;
+        private readonly DateTimeService _dateTimeService;
 
-        public DbRepository(Config config) {
+        public DbRepository(Config config, DateTimeService dateTimeService) {
             _config = config;
+            _dateTimeService = dateTimeService;
         }
 
         public bool ChatIdExistiert(long chatId) {
@@ -76,12 +78,12 @@ namespace MedReminder.Repository {
 
         public List<Erinnerung> GetFaelligeErinnerungen() {
             using var d = Gdc();
-            var curDate = DateTime.UtcNow.Date;
-            var curTime = DateTime.UtcNow;
+            var curDate = _dateTimeService.UtcNow.Date;
+            var curTime = _dateTimeService.UtcNow;
             curTime = new DateTime(2000, 1, 1, curTime.Hour, curTime.Minute, 0);
 
             var faelligeErinnerungenNochNichtGesendet = d.Erinnerung
-                .Where(x => x.GueltigAbDatim >= curDate && x.UhrzeitUtc <= curTime)
+                .Where(x => x.GueltigAbDatim <= curDate && x.UhrzeitUtc <= curTime)
                 .Where(x => !x.ErinnerungGesendet.Any(x => x.GesendetUm.Date == curDate && !x.IstZusaetzlicheErinnerung))
                 .Include(x => x.Benutzer)
                 .ToList();
@@ -91,8 +93,8 @@ namespace MedReminder.Repository {
 
         public List<Erinnerung> GetZusaetzlicheErinnerungen() {
             using var d = Gdc();
-            var curDate = DateTime.UtcNow.Date;
-            var curTime = DateTime.UtcNow;
+            var curDate = _dateTimeService.UtcNow.Date;
+            var curTime = _dateTimeService.UtcNow;
             curTime = new DateTime(2000, 1, 1, curTime.Hour, curTime.Minute, 0);
 
             var faelligeErinnerungenNochNichtGesendet = d.Erinnerung
@@ -107,8 +109,8 @@ namespace MedReminder.Repository {
 
         public List<Erinnerung> GetUeberfaelligeErinnerungen() {
             using var d = Gdc();
-            var curDate = DateTime.UtcNow.Date;
-            var curTime = DateTime.UtcNow;
+            var curDate = _dateTimeService.UtcNow.Date;
+            var curTime = _dateTimeService.UtcNow;
 
             var ueberfaelligeErinnerungen =
             d.ChatZustand
@@ -149,6 +151,18 @@ namespace MedReminder.Repository {
                 d.Database.ExecuteSqlInterpolated($"delete from benutzer b where b.id = {benutzer.Id};");
             }
             d.Database.ExecuteSqlInterpolated($"delete from chat_zustand where chat_id = {chatId};");
+        }
+
+        public void ExecuteSqlScript(string sql) {
+            using var d = Gdc();
+            using var t = d.Database.BeginTransaction();
+            try {
+                d.Database.ExecuteSqlRaw(sql);
+                t.Commit();
+            } catch (Exception e) {
+                t.Rollback();
+                throw e;
+            }
         }
 
         private MedReminderDbContext Gdc() {

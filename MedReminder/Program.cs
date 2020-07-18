@@ -19,7 +19,7 @@ namespace MedReminder {
                 configReader.WriteDefaultConfig();
                 return;
             }
-            var config = await configReader.ReadConfig();
+            var config = configReader.ReadConfig();
             container.Inject<Config>(config);
             logger.LogInformation($"Configfile gefunden und geladen");
 
