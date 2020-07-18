@@ -131,7 +131,7 @@ namespace MedReminder.Services {
                 GueltigAbDatim = DateTime.UtcNow.Date
             };
 
-            if(e.UhrzeitUtc < new DateTime(2000 ,0 ,1, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0)) {
+            if(e.UhrzeitUtc < new DateTime(2000 , 1, 1, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0)) {
                 //Wenn die Uhrzeit heute schon vorbei ist, ist die Erinnerung ab morgen gültig
                 e.GueltigAbDatim = DateTime.UtcNow.Date.AddDays(1);
             }
