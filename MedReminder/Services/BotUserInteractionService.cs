@@ -193,10 +193,10 @@ namespace MedReminder.Services {
                 return;
             }
 
-            var uhrzeit = erinnerung.UhrzeitUtc.ToLocalTime();
+            var uhrzeit = KonvertiereDbUhrzeitZuLocalTime(erinnerung.UhrzeitUtc);
             var zusaetzlicherText = string.Empty;
             if (erinnerung.ZusaetzlicheErinnerung.HasValue) {
-                var zusaetzlicheUhrzeit = erinnerung.ZusaetzlicheErinnerung.Value.ToLocalTime();
+                var zusaetzlicheUhrzeit = KonvertiereDbUhrzeitZuLocalTime(erinnerung.ZusaetzlicheErinnerung.Value);
                 zusaetzlicherText = $"{Environment.NewLine}3️⃣ Außerdem ist für {zusaetzlicheUhrzeit:HH:mm} Uhr eine zusätzliche Erinnerung konfiguriert";
             }
             await _telegramApi.SendeNachricht($"2️⃣ Ansonsten erinnere ich dich um {uhrzeit:HH:mm} Uhr 🤠{zusaetzlicherText}", chatId);
@@ -242,6 +242,12 @@ namespace MedReminder.Services {
             uhrzeitErinnerung = DateTime.SpecifyKind(uhrzeitErinnerung, DateTimeKind.Utc);
 
             return new Tuple<DateTime, DateTime>(uhrzeitErinnerungUtc, uhrzeitErinnerung);
+        }
+
+        private DateTime KonvertiereDbUhrzeitZuLocalTime(DateTime dbUhrzeit) {
+            var t = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, dbUhrzeit.Hour, dbUhrzeit.Minute, 0, DateTimeKind.Utc);
+            var uhrzeit = TimeZoneInfo.ConvertTimeFromUtc(t, TimeZoneInfo.Local);
+            return uhrzeit;
         }
     }
 }
