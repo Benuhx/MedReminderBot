@@ -124,6 +124,12 @@ namespace MedReminder.Repository {
             return ueberfaelligeErinnerungen;
         }
 
+        public Erinnerung GetErinnerungFuerChatId(long chatId) {
+            using var d = Gdc();
+            var erinnerung = d.Erinnerung.SingleOrDefault(x => x.Benutzer.TelegramChatId == chatId);
+            return erinnerung;
+        }
+
         public void SpeichereErinnerungGesendet(ErinnerungGesendet e) {
             using var d = Gdc();
             d.ErinnerungGesendet.Add(e);

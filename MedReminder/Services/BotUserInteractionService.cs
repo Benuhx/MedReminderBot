@@ -41,7 +41,7 @@ namespace MedReminder.Services {
 
             var zusätzlicherText = string.Empty;
             if (erinnerungsTyp == ErinnerungsTyp.UeberfaelligeErinnerung) {
-                zusätzlicherText= $"🤖 Automatische Erinnerung nach einer Stunde 🤖{Environment.NewLine}{Environment.NewLine}";
+                zusätzlicherText = $"🤖 Automatische Erinnerung nach einer Stunde 🤖{Environment.NewLine}{Environment.NewLine}";
             } else if (erinnerungsTyp == ErinnerungsTyp.ZusaetzlicheErinnerung) {
                 zusätzlicherText = $"⌚ Zusätzliche Erinnerung ⌚{Environment.NewLine}{Environment.NewLine}";
             }
@@ -96,7 +96,8 @@ namespace MedReminder.Services {
                     await AntwortAufReset(chatId, nachrichtText);
                     break;
                 default:
-                    await _telegramApi.SendeNachricht($"Ich habe leider keine passende Antwort für dich ☹{Environment.NewLine}1️⃣ Wenn du die Erinnerungen deaktivieren möchtest, kann du mir eine Nachricht mit 'reset' schreiben", chatId); break;
+                    await SendeStandardAntwort(chatId);
+                    break;
             }
         }
 
@@ -131,7 +132,7 @@ namespace MedReminder.Services {
                 GueltigAbDatim = DateTime.UtcNow.Date
             };
 
-            if(e.UhrzeitUtc < new DateTime(2000 , 1, 1, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0)) {
+            if (e.UhrzeitUtc < new DateTime(2000, 1, 1, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0)) {
                 //Wenn die Uhrzeit heute schon vorbei ist, ist die Erinnerung ab morgen gültig
                 e.GueltigAbDatim = DateTime.UtcNow.Date.AddDays(1);
             }
@@ -182,6 +183,23 @@ namespace MedReminder.Services {
             }
             SpeichereChatZustand(chatId, ZustandChat.Fertig);
             await _telegramApi.SendeNachricht("Kein Reset durchgeführt", chatId);
+        }
+
+        private async Task SendeStandardAntwort(long chatId) {
+            var erinnerung = _dbRepository.GetErinnerungFuerChatId(chatId);
+            await _telegramApi.SendeNachricht($"Ich habe leider keine passende Antwort für dich ☹{Environment.NewLine}1️⃣ Wenn du die Erinnerungen deaktivieren möchtest, kann du mir eine Nachricht mit 'reset' schreiben", chatId);
+            if (erinnerung == null) {
+                await _telegramApi.SendeNachricht("Im Moment ist für dich auch keine Erinnerung konfiguriert", chatId);
+                return;
+            }
+
+            var uhrzeit = erinnerung.UhrzeitUtc.ToLocalTime();
+            var zusaetzlicherText = string.Empty;
+            if (erinnerung.ZusaetzlicheErinnerung.HasValue) {
+                var zusaetzlicheUhrzeit = erinnerung.ZusaetzlicheErinnerung.Value.ToLocalTime();
+                zusaetzlicherText = $"{Environment.NewLine}3️⃣ Außerdem ist für {zusaetzlicheUhrzeit:HH:mm} Uhr eine zusätzliche Erinnerung konfiguriert";
+            }
+            await _telegramApi.SendeNachricht($"2️⃣ Ansonsten erinnere ich dich um {uhrzeit:HH:mm} Uhr 🤠{zusaetzlicherText}", chatId);
         }
 
         private ZustandChat GetChatZustand(long chatId) {
